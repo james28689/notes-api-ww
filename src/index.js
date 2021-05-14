@@ -9,6 +9,8 @@ app.use(bodyParser.json());
 
 const q = faunadb.query;
 
+var port = process.env.PORT || 8080;
+
 app.get("/getNotes", async (req, res) => {
     const doc = await client.query(
         q.Map(
@@ -87,4 +89,4 @@ app.put("/updateNote/:noteID", async (req, res) => {
     res.send(doc);
 })
 
-app.listen(5000, () => console.log("Listening on port 5000 at http://localhost:5000/"))
+app.listen(port, () => console.log("Listening on port 5000 at http://localhost:5000/"))
