@@ -88,6 +88,7 @@ app.put("/updateNote/:noteID", async (req, res) => {
             { data }
         )
     )
+    .catch(e => console.log(e))
 
     res.send(doc);
 })
