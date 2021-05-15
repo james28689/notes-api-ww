@@ -91,4 +91,4 @@ app.put("/updateNote/:noteID", async (req, res) => {
     res.send(doc);
 })
 
-app.listen(port, () => console.log("Listening on port 5000 at http://localhost:5000/"))
+app.listen(port, () => console.log(`Listening on port ${port}.`))
