@@ -79,6 +79,8 @@ app.put("/updateNote/:noteID", async (req, res) => {
         date: q.Date(req.body.date)
     }
 
+    console.log(data);
+
     const doc = await client.query(
         q.Update(
             q.Ref(
