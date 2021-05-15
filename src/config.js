@@ -1,1 +1,0 @@
-module.exports = { SECRET_KEY: "fnAEJNIzmyACB5xpP4Lw7zonKaCFojUIZ-g-812k" }

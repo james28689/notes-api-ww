@@ -2,9 +2,11 @@ const app = require("express")();
 //const cors = require("cors");
 //app.use(cors);
 
+require("dotenv").config()
+
 const faunadb = require("faunadb");
 const { SECRET_KEY } = require("./config");
-const client = new faunadb.Client({secret: SECRET_KEY});
+const client = new faunadb.Client({secret: process.env.SECRET_KEY });
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
