@@ -1,4 +1,6 @@
 const app = require("express")();
+const cors = require("cors");
+app.use(cors);
 
 const faunadb = require("faunadb");
 const { SECRET_KEY } = require("./config");
