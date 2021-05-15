@@ -5,7 +5,6 @@ const app = require("express")();
 require("dotenv").config()
 
 const faunadb = require("faunadb");
-const { SECRET_KEY } = require("./config");
 const client = new faunadb.Client({secret: process.env.SECRET_KEY });
 
 const bodyParser = require("body-parser");
