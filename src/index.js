@@ -41,6 +41,7 @@ app.get("/getNote/:noteID", async (req, res) => {
 })
 
 app.delete("/deleteNote/:noteID", async (req, res) => {
+    console.log(req.params.noteID)
     await client.query(
         q.Delete(
             q.Ref(
