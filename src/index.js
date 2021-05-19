@@ -18,7 +18,7 @@ app.get("/getNotes", async (req, res) => {
     const doc = await client.query(
         q.Map(
             q.Paginate(q.Documents(q.Collection("notes"))),
-            q.Lambda("X", q.Get(q.Var("X")))
+            q.Lambda("note", q.Get(q.Var("note")))
         )
     )
     .catch(e => console.log(e));
