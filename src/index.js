@@ -42,7 +42,21 @@ app.get("/getUserNotes/:userID", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    res.send(doc)
+    let noteData = doc.data;
+    var notes = [];
+
+    for (var i in noteData) {
+        notes.push({
+            noteID: noteData[i].ref.id,
+            userID: noteData[i].data.userRef.id,
+            title: noteData[i].data.title,
+            content: noteData[i].data.content,
+            date: Date(noteData[i].data.date["@date"])
+        });
+    }
+
+
+    res.json(notes);
 })
 
 app.get("/getNote/:noteID", async (req, res) => {
@@ -76,6 +90,7 @@ app.delete("/deleteNote/:noteID", async (req, res) => {
 
 app.post("/addNote", async (req, res) => {
     const data = {
+        userRef: q.Ref(q.Collection("users"), req.body.userID),
         title: req.body.title,
         content: req.body.content,
         date: q.Date(req.body.date)
