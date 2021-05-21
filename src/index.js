@@ -110,10 +110,12 @@ app.post("/addNote", async (req, res) => {
 })
 
 app.put("/updateNote/:noteID", async (req, res) => {
+    let currentDate = new Date();
+
     const data = {
         title: req.body.title,
         content: req.body.content,
-        date: q.Date(req.body.date)
+        date: q.Date(currentDate.toISOString().substring(0,10))
     }
 
     const doc = await client.query(
