@@ -213,7 +213,23 @@ app.delete("/user/delete/:userID", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    res.send(doc);
+    const doc2 = await client.query(
+        q.Map(
+            q.Paginate(
+                q.Match(
+                    Index("notes_by_user"),
+                    q.Ref(
+                        q.Collection("users"),
+                        req.params.userID
+                    )
+                )
+            ),
+            q.Lambda("note", Delete(Var("note")))
+        )
+    )
+    .catch(e => console.log(e));
+
+    res.send(doc, doc2);
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}.`))
