@@ -14,6 +14,8 @@ const q = faunadb.query;
 
 var port = process.env.PORT || 8080;
 
+var crypto = require("crypto");
+
 app.get("/getNotes", async (req, res) => {
     const doc = await client.query(
         q.Map(
@@ -70,7 +72,7 @@ app.post("/addNote", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    res.send(doc);
+    res.send(`Created note.`);
 })
 
 app.put("/updateNote/:noteID", async (req, res) => {
@@ -93,5 +95,20 @@ app.put("/updateNote/:noteID", async (req, res) => {
 
     res.send(doc);
 })
+
+app.get("/user/authenticate", async (req, res) => {
+    const hashedPassword = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
+
+    const doc = await client.query(
+        q.Get(
+            q.Match(q.Index("users_by_username"), req.body.username)
+        )
+    )
+    .catch(e => console.log(e));
+
+    console.log(doc);
+
+    res.send("Authentication in development...");
+});
 
 app.listen(port, () => console.log(`Listening on port ${port}.`))
