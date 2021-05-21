@@ -203,16 +203,6 @@ app.put("/user/update/:userID", async (req, res) => {
 });
 
 app.delete("/user/delete/:userID", async (req, res) => {
-    const doc = await client.query(
-        q.Delete(
-            q.Ref(
-                q.Collection("users"),
-                req.params.userID
-            )
-        )
-    )
-    .catch(e => console.log(e));
-
     const doc2 = await client.query(
         q.Map(
             q.Paginate(
@@ -225,6 +215,16 @@ app.delete("/user/delete/:userID", async (req, res) => {
                 )
             ),
             q.Lambda("note", Delete(Var("note")))
+        )
+    )
+    .catch(e => console.log(e));
+
+    const doc = await client.query(
+        q.Delete(
+            q.Ref(
+                q.Collection("users"),
+                req.params.userID
+            )
         )
     )
     .catch(e => console.log(e));
