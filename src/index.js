@@ -162,4 +162,58 @@ app.post("/user/create", async (req, res) => {
     res.send(doc);
 });
 
+app.put("/user/changePassword/:userID", async (req, res) => {
+    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
+
+    const doc = await client.query(
+        q.Update(
+            q.Ref(
+                q.Collection("users"),
+                req.params.userID
+            ),
+            {
+                passwordHash: givenPasswordHash,
+            }
+        )
+    )
+    .catch(e => console.log(e));
+
+    res.send(doc);
+});
+
+app.put("/user/update/:userID", async (req, res) => {
+    const doc = await client.query(
+        q.Update(
+            q.Ref(
+                q.Collection("users"),
+                req.params.userID
+            ),
+            {
+                email: req.body.email,
+                name: {
+                    first: req.body.firstName,
+                    last: req.body.lastName
+                }
+            }
+        )
+    )
+    .catch(e => console.log(e));
+
+    res.send(doc);
+});
+
+app.delete("/user/deleteUser/:userID", async (req, res) => {
+    const doc = await client.query(
+        q.Delete(
+            q.Ref(
+                q.Collection("users"),
+                req.params.userID
+            )
+        )
+    )
+    .catch(e => console.log(e));
+
+    res.send(doc);
+});
+
 app.listen(port, () => console.log(`Listening on port ${port}.`))
