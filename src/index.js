@@ -202,7 +202,7 @@ app.put("/user/update/:userID", async (req, res) => {
     res.send(doc);
 });
 
-app.delete("/user/deleteUser/:userID", async (req, res) => {
+app.delete("/user/delete/:userID", async (req, res) => {
     const doc = await client.query(
         q.Delete(
             q.Ref(
