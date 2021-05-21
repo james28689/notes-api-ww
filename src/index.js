@@ -97,7 +97,7 @@ app.put("/updateNote/:noteID", async (req, res) => {
 })
 
 app.get("/user/authenticate", async (req, res) => {
-    const hashedPassword = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
+    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
 
     const doc = await client.query(
         q.Get(
@@ -106,9 +106,43 @@ app.get("/user/authenticate", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    console.log(doc);
+    if (doc.data.passwordHash == givenPasswordHash) {
+        res.json({
+            "authenticated": true,
+            "userID": doc.ref.id,
+        });
+    } else {
+        res.json({
+            "authenticated": false
+        });
+    }
+});
 
-    res.send("Authentication in development...");
+app.post("/user/create", async (req, res) => {
+    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
+
+    let currentDate = new Date();
+
+    const data = {
+        email: req.body.email,
+        username: req.body.username,
+        passwordHash: givenPasswordHash,
+        name: {
+            first: req.body.firstName,
+            last: req.body.lastName
+        },
+        dateJoined: q.Date(currentDate.toISOString().substring(0,10))
+    }
+
+    const doc = await client.query(
+        q.Create(
+            q.Collection("users"),
+            { data }
+        )
+    )
+    .catch(e => console.log(e))
+
+    res.send(doc);
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}.`))
