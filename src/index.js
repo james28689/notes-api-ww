@@ -28,6 +28,23 @@ app.get("/getNotes", async (req, res) => {
     res.send(doc);
 })
 
+app.get("/getUserNotes/:userID", async (req, res) => {
+    const doc = await client.query(
+        q.Map(
+            q.Paginate(
+                q.Match(
+                    q.Index("notes_by_user"),
+                    q.Ref(q.Collection("users"), req.params.userID)
+                )
+            ),
+            q.Lambda("note", q.Get(q.Var("note")))
+        )
+    )
+    .catch(e => console.log(e));
+
+    res.send(doc)
+})
+
 app.get("/getNote/:noteID", async (req, res) => {
     const doc = await client.query(
         q.Get(
