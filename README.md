@@ -9,6 +9,14 @@ Created using FaunaDB, node.js, and express
     - title
     - content
     - date
+## User:
+    - userID
+    - email
+    - name {
+        - first
+        - last
+    }
+    - dateJoined
 
 # Endpoints:
 ## /note:
@@ -30,3 +38,11 @@ Created using FaunaDB, node.js, and express
 ### /update/{noteID}:
     - Takes note ID in request parameters and data as JSON in request body.
     - Sends confirmation message.
+## /user:
+### /authenticate:
+    - Takes username and password as JSON in request body.
+    - Sends authentication status (true/false) and formatted user data.
+### /create:
+    - Takes user data and password hash as JSON in request body.
+    - Sends formatted user data back.
+### ...

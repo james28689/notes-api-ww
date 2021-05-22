@@ -183,7 +183,7 @@ app.post("/user/create", async (req, res) => {
     )
     .catch(e => console.log(e))
 
-    res.send(doc);
+    res.send(formatData.formatUser(doc));
 });
 
 app.put("/user/changePassword/:userID", async (req, res) => {
