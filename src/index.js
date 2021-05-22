@@ -16,6 +16,8 @@ var port = process.env.PORT || 8080;
 
 var crypto = require("crypto");
 
+var formatData = require("./formatData");
+
 app.get("/getNotes", async (req, res) => {
     const doc = await client.query(
         q.Map(
@@ -25,7 +27,9 @@ app.get("/getNotes", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    res.send(doc);
+    let notes = formatData.formatNoteArray(doc.data);
+
+    res.send(notes);
 })
 
 app.get("/getUserNotes/:userID", async (req, res) => {
@@ -42,18 +46,7 @@ app.get("/getUserNotes/:userID", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    let noteData = doc.data;
-    var notes = [];
-
-    for (var i in noteData) {
-        notes.push({
-            noteID: noteData[i].ref.id,
-            userID: noteData[i].data.userRef.id,
-            title: noteData[i].data.title,
-            content: noteData[i].data.content,
-            date: Date(noteData[i].data.date["@date"])
-        });
-    }
+    let notes = formatData.formatNoteArray(doc.data);
 
 
     res.json(notes);
@@ -140,7 +133,10 @@ app.get("/user/authenticate", async (req, res) => {
             q.Match(q.Index("users_by_username"), req.body.username)
         )
     )
-    .catch(e => console.log(e));
+    .catch(e => {
+        console.log(e)
+        res.json({ "authenticated": false });
+    });
 
     if (doc.data.passwordHash == givenPasswordHash) {
         res.json({
