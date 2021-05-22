@@ -18,7 +18,7 @@ var crypto = require("crypto");
 
 var formatData = require("./formatData");
 
-app.get("/getNotes", async (req, res) => {
+app.get("/note/all", async (req, res) => {
     const doc = await client.query(
         q.Map(
             q.Paginate(q.Documents(q.Collection("notes"))),
@@ -29,10 +29,10 @@ app.get("/getNotes", async (req, res) => {
 
     let notes = formatData.formatNoteArray(doc.data);
 
-    res.send(notes);
+    res.json(notes);
 })
 
-app.get("/getUserNotes/:userID", async (req, res) => {
+app.get("/note/user/:userID", async (req, res) => {
     const doc = await client.query(
         q.Map(
             q.Paginate(
@@ -52,7 +52,7 @@ app.get("/getUserNotes/:userID", async (req, res) => {
     res.json(notes);
 })
 
-app.get("/getNote/:noteID", async (req, res) => {
+app.get("/note/get/:noteID", async (req, res) => {
     const doc = await client.query(
         q.Get(
             q.Ref(
@@ -63,10 +63,12 @@ app.get("/getNote/:noteID", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    res.send(doc);
+    let note = formatData.formatNote(doc.data);
+
+    res.json(note);
 })
 
-app.delete("/deleteNote/:noteID", async (req, res) => {
+app.delete("/note/delete/:noteID", async (req, res) => {
     console.log(req.params.noteID)
     await client.query(
         q.Delete(
@@ -76,12 +78,15 @@ app.delete("/deleteNote/:noteID", async (req, res) => {
             )
         )
     )
-    .catch(e => console.log(e));
+    .catch(e => {
+        console.log(e);
+        res.send(`Failed to delete note with id ${req.params.noteID}.`)
+    });
 
-    res.send(`Deleted note with id ${req.params.noteID}`)
+    res.send(`Deleted note with id ${doc.ref.id}.`)
 })
 
-app.post("/addNote", async (req, res) => {
+app.post("/note/add", async (req, res) => {
     let currentDate = new Date();
 
     const data = {
@@ -97,12 +102,15 @@ app.post("/addNote", async (req, res) => {
             { data }
         )
     )
-    .catch(e => console.log(e));
+    .catch(e => {
+        console.log(e);
+        res.send("Failed to create note.")
+    });
 
-    res.send(`Created note.`);
+    res.send(`Created note with id ${doc.ref.id}`);
 })
 
-app.put("/updateNote/:noteID", async (req, res) => {
+app.put("/note/update/:noteID", async (req, res) => {
     let currentDate = new Date();
 
     const data = {
@@ -122,7 +130,7 @@ app.put("/updateNote/:noteID", async (req, res) => {
     )
     .catch(e => console.log(e))
 
-    res.send(doc);
+    res.send(`Note with id ${doc.ref.id} updated.`);
 })
 
 app.get("/user/authenticate", async (req, res) => {
@@ -139,9 +147,10 @@ app.get("/user/authenticate", async (req, res) => {
     });
 
     if (doc.data.passwordHash == givenPasswordHash) {
+        let user = formatData.formatUser(doc);
         res.json({
             "authenticated": true,
-            "userID": doc.ref.id,
+            "user": user
         });
     } else {
         res.json({
