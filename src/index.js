@@ -30,6 +30,7 @@ app.use(session({
 }))
 
 app.get('/note/user', async (req, res) => {
+  console.log(req.session.userID)
   const doc = await client.query(
     q.Map(
       q.Paginate(
@@ -42,6 +43,8 @@ app.get('/note/user', async (req, res) => {
     )
   )
     .catch(e => console.log(e))
+
+  console.log(doc)
 
   const notes = formatData.formatNoteArray(doc)
 
