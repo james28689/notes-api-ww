@@ -143,26 +143,33 @@ app.post('/auth/google', async (req, res) => {
 
   const { name, email } = ticket.getPayload()
 
-  console.log(name, email)
-
-  const data = {
-    email: email,
-    username: name + (Math.floor(Math.random() * 99)).toString(),
-    name: name,
-    dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
-  }
-
-  console.log(data)
-
-  const doc = await client.query(
-    q.Create(
-      q.Collection('users'),
-      {
-        data
-      }
+  try {
+    const doc = await client.query(
+      q.Get(
+        q.Match(
+          q.Index('users_by_email'),
+          email
+        )
+      )
     )
-  )
-    .catch(e => console.log(e))
+  } catch (error) {
+    const data = {
+      email: email,
+      username: name + (Math.floor(Math.random() * 99)).toString(),
+      name: name,
+      dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+    }
+    
+    const doc = await client.query(
+      q.Create(
+        q.Collection('users'),
+        {
+          data
+        }
+      )
+    )
+    .catch(error2 => console.log(error2))
+  }
 
   req.session.userID = doc.ref.id
 
