@@ -143,14 +143,22 @@ app.post('/auth/google', async (req, res) => {
 
   const { name, email } = ticket.getPayload()
 
+  console.log(name, email)
+
+  const data = {
+    email: email,
+    username: name + (Math.floor(Math.random * 99)).toString(),
+    name: name,
+    dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+  }
+
+  console.log(data)
+
   const doc = await client.query(
     q.Create(
       q.Collection('users'),
       {
-        email: email,
-        username: name + (Math.floor((Math.random() * 99))).toString(),
-        name: name,
-        dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+        data
       }
     )
   )
