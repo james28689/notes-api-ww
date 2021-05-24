@@ -61,7 +61,10 @@ app.get("/note/get/:noteID", async (req, res) => {
             )
         )
     )
-    .catch(e => console.log(e));
+    .catch(e => {
+        console.log(e)
+        res.json(`Request failed with error: ${e}`)
+    });
 
     let note = formatData.formatNote(doc);
 
