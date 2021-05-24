@@ -7,6 +7,9 @@ require("dotenv").config()
 const faunadb = require("faunadb");
 const client = new faunadb.Client({secret: process.env.SECRET_KEY });
 
+const { OAuth2Client } = require("google-auth-library");
+const oauth_client = new OAuth2Client(process.env.CLIENT_ID);
+
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
 
@@ -14,31 +17,15 @@ const q = faunadb.query;
 
 var port = process.env.PORT || 8080;
 
-var crypto = require("crypto");
-
 var formatData = require("./formatData");
 
-app.get("/note/all", async (req, res) => {
-    const doc = await client.query(
-        q.Map(
-            q.Paginate(q.Documents(q.Collection("notes"))),
-            q.Lambda("note", q.Get(q.Var("note")))
-        )
-    )
-    .catch(e => console.log(e));
-
-    let notes = formatData.formatNoteArray(doc.data);
-
-    res.json(notes);
-})
-
-app.get("/note/user/:userID", async (req, res) => {
+app.get("/note/user", async (req, res) => {
     const doc = await client.query(
         q.Map(
             q.Paginate(
                 q.Match(
                     q.Index("notes_by_user"),
-                    q.Ref(q.Collection("users"), req.params.userID)
+                    q.Ref(q.Collection("users"), req.session.userID)
                 )
             ),
             q.Lambda("note", q.Get(q.Var("note")))
@@ -50,7 +37,7 @@ app.get("/note/user/:userID", async (req, res) => {
 
 
     res.json(notes);
-})
+});
 
 app.get("/note/get/:noteID", async (req, res) => {
     const doc = await client.query(
@@ -69,7 +56,7 @@ app.get("/note/get/:noteID", async (req, res) => {
     let note = formatData.formatNote(doc);
 
     res.json(note);
-})
+});
 
 app.delete("/note/delete/:noteID", async (req, res) => {
     console.log(req.params.noteID)
@@ -87,13 +74,13 @@ app.delete("/note/delete/:noteID", async (req, res) => {
     });
 
     res.send(`Deleted note with id ${doc.ref.id}.`)
-})
+});
 
 app.post("/note/add", async (req, res) => {
     let currentDate = new Date();
 
     const data = {
-        userRef: q.Ref(q.Collection("users"), req.body.userID),
+        userRef: q.Ref(q.Collection("users"), req.session.userID),
         title: req.body.title,
         content: req.body.content,
         date: q.Date(currentDate.toISOString().substring(0,10))
@@ -111,7 +98,7 @@ app.post("/note/add", async (req, res) => {
     });
 
     res.send(`Created note with id ${doc.ref.id}`);
-})
+});
 
 app.put("/note/update/:noteID", async (req, res) => {
     let currentDate = new Date();
@@ -134,129 +121,77 @@ app.put("/note/update/:noteID", async (req, res) => {
     .catch(e => console.log(e))
 
     res.send(`Note with id ${doc.ref.id} updated.`);
-})
-
-app.get("/user/authenticate", async (req, res) => {
-    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
-
-    const doc = await client.query(
-        q.Get(
-            q.Match(q.Index("users_by_username"), req.body.username)
-        )
-    )
-    .catch(e => {
-        console.log(e)
-        res.json({ "authenticated": false });
-    });
-
-    if (doc.data.passwordHash == givenPasswordHash) {
-        let user = formatData.formatUser(doc);
-        res.json({
-            "authenticated": true,
-            "user": user
-        });
-    } else {
-        res.json({
-            "authenticated": false
-        });
-    }
 });
 
-app.post("/user/create", async (req, res) => {
-    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
-
+app.post("/auth/google", async (req, res) => {
     let currentDate = new Date();
 
-    const data = {
-        email: req.body.email,
-        username: req.body.username,
-        passwordHash: givenPasswordHash,
-        name: {
-            first: req.body.firstName,
-            last: req.body.lastName
-        },
-        dateJoined: q.Date(currentDate.toISOString().substring(0,10))
-    }
+    const { token } = req.body;
+    const ticket = await oauth_client.verifyIdToken({
+        idToken: token,
+        audience: process.env.CLIENT_ID
+    });
+
+    const { name, email } = ticket.getPayload();
 
     const doc = await client.query(
         q.Create(
             q.Collection("users"),
-            { data }
-        )
-    )
-    .catch(e => console.log(e))
-
-    res.send(formatData.formatUser(doc));
-});
-
-app.put("/user/changePassword/:userID", async (req, res) => {
-    const givenPasswordHash = crypto.createHash("sha256").update(req.body.password, "utf-8").digest("hex");
-
-    const doc = await client.query(
-        q.Update(
-            q.Ref(
-                q.Collection("users"),
-                req.params.userID
-            ),
             {
-                passwordHash: givenPasswordHash,
+                email: email,
+                name: name,
+                dateJoined: q.Date(currentDate.toISOString().substring(0,10))
             }
         )
     )
     .catch(e => console.log(e));
 
-    res.send(doc);
+    req.session.userID = doc.ref.id;
+
+    res.status(201);
+    res.json(doc);
 });
 
-app.put("/user/update/:userID", async (req, res) => {
-    const doc = await client.query(
-        q.Update(
+app.use(async (req, res, next) => {
+    const user = await client.query(
+        q.Get(
             q.Ref(
                 q.Collection("users"),
-                req.params.userID
-            ),
-            {
-                email: req.body.email,
-                name: {
-                    first: req.body.firstName,
-                    last: req.body.lastName
-                }
-            }
-        )
-    )
-    .catch(e => console.log(e));
-
-    res.send(doc);
-});
-
-app.delete("/user/delete/:userID", async (req, res) => {
-    const doc2 = await client.query(
-        q.Map(
-            q.Paginate(
-                q.Match(
-                    Index("notes_by_user"),
-                    q.Ref(
-                        q.Collection("users"),
-                        req.params.userID
-                    )
-                )
-            ),
-            q.Lambda("note", Delete(Var("note")))
-        )
-    )
-    .catch(e => console.log(e));
-
-    const doc = await client.query(
-        q.Delete(
-            q.Ref(
-                q.Collection("users"),
-                req.params.userID
+                req.session.userID
             )
         )
     )
-    .catch(e => console.log(e));
+    .catch(e => res.send("Unauthorised user."))
 
-    res.send(doc, doc2);
+    req.user = user;
+    next()
 });
 
-app.listen(port, () => console.log(`Listening on port ${port}.`))
+app.delete("/auth/logout", async (req, res) => {
+    await req.session.destroy();
+    res.status(200);
+    res.json({
+        message: "Logged out successfully."
+    });
+});
+
+app.get("/me", async (req, res) => {
+    res.status(200);
+    res.json(req.user)
+});
+
+app.listen(port, () => console.log(`Listening on port ${port}.`));
+
+// app.get("/note/all", async (req, res) => {
+//     const doc = await client.query(
+//         q.Map(
+//             q.Paginate(q.Documents(q.Collection("notes"))),
+//             q.Lambda("note", q.Get(q.Var("note")))
+//         )
+//     )
+//     .catch(e => console.log(e));
+
+//     let notes = formatData.formatNoteArray(doc.data);
+
+//     res.json(notes);
+// });
