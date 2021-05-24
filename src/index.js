@@ -26,8 +26,6 @@ app.use(cookieParser());
 
 app.use(session({
   secret: "random text that I'm typing out shhhhh",
-  resave: true,
-  saveUninitialized: true,
   cookie: {
     secure: false
   }
