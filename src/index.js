@@ -19,6 +19,16 @@ const port = process.env.PORT || 8080
 
 const formatData = require('./formatData')
 
+var cookieParser = require("cookie-parser");
+var session = require("express-session");
+
+app.use(cookieParser());
+
+app.use(session({
+  secret: "random text that I'm typing out shhhhh",
+  cookie: { secure: false }
+}))
+
 app.get('/note/user', async (req, res) => {
   const doc = await client.query(
     q.Map(
