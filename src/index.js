@@ -152,6 +152,11 @@ app.post('/auth/google', async (req, res) => {
         )
       )
     )
+
+    req.session.userID = doc.ref.id
+
+    res.status(201)
+    res.json(doc)
   } catch (error) {
     const data = {
       email: email,
@@ -159,7 +164,7 @@ app.post('/auth/google', async (req, res) => {
       name: name,
       dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
     }
-    
+
     const doc = await client.query(
       q.Create(
         q.Collection('users'),
@@ -169,12 +174,14 @@ app.post('/auth/google', async (req, res) => {
       )
     )
     .catch(error2 => console.log(error2))
+
+    req.session.userID = doc.ref.id
+
+    res.status(201)
+    res.json(doc)
   }
 
-  req.session.userID = doc.ref.id
-
-  res.status(201)
-  res.json(doc)
+  res.json({ "Message": "Unknown failure." })
 })
 
 app.use(async (req, res, next) => {
