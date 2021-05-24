@@ -26,11 +26,85 @@ app.use(cookieParser());
 
 app.use(session({
   secret: "random text that I'm typing out shhhhh",
-  cookie: { secure: false }
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    secure: false
+  }
 }))
 
+app.post('/auth/google', async (req, res) => {
+  const currentDate = new Date()
+
+  const { token } = req.body
+  const ticket = await oauth_client.verifyIdToken({
+    idToken: token,
+    audience: process.env.CLIENT_ID
+  })
+
+  const { name, email } = ticket.getPayload()
+
+  const userExists = await client.query(
+    q.Exists(q.Match(q.Index("users_by_email"), email))
+  )
+
+  if (userExists) {
+    const user = await client.query(
+      q.Get(
+        q.Match(
+          q.Index("users_by_email"),
+          email
+        )
+      )
+    )
+
+    req.session.userID = user.ref.id
+    res.status(201)
+    res.json(user)
+  } else {
+    const data = {
+      email: email,
+      username: name + (Math.floor(Math.random() * 99)).toString(),
+      name: name,
+      dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+    }
+
+    const user = await client.query(
+      q.Create(
+        q.Collection("users"),
+        {
+          data
+        }
+      )
+    )
+    .catch(error => console.log(error));
+
+    req.session.userID = user.ref.id
+    res.status(201)
+    res.json(user)
+  }
+
+  console.log(req.session)
+})
+
+app.use(async (req, res, next) => {
+  console.log("HOLA")
+
+  const user = await client.query(
+    q.Get(
+      q.Ref(
+        q.Collection('users'),
+        req.session.userID
+      )
+    )
+  )
+    .catch(e => res.send('Unauthorised user.'))
+
+  req.user = user
+  next()
+})
+
 app.get('/note/user', async (req, res) => {
-  console.log(req.session.userID)
   const doc = await client.query(
     q.Map(
       q.Paginate(
@@ -133,73 +207,6 @@ app.put('/note/update/:noteID', async (req, res) => {
     .catch(e => console.log(e))
 
   res.send(`Note with id ${doc.ref.id} updated.`)
-})
-
-app.post('/auth/google', async (req, res) => {
-  const currentDate = new Date()
-
-  const { token } = req.body
-  const ticket = await oauth_client.verifyIdToken({
-    idToken: token,
-    audience: process.env.CLIENT_ID
-  })
-
-  const { name, email } = ticket.getPayload()
-
-  try {
-    const doc = await client.query(
-      q.Get(
-        q.Match(
-          q.Index('users_by_email'),
-          email
-        )
-      )
-    )
-
-    req.session.userID = doc.ref.id
-
-    res.status(201)
-    res.json(doc)
-  } catch (error) {
-    const data = {
-      email: email,
-      username: name + (Math.floor(Math.random() * 99)).toString(),
-      name: name,
-      dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
-    }
-
-    const doc = await client.query(
-      q.Create(
-        q.Collection('users'),
-        {
-          data
-        }
-      )
-    )
-    .catch(error2 => console.log(error2))
-
-    req.session.userID = doc.ref.id
-
-    res.status(201)
-    res.json(doc)
-  }
-
-  res.json({ "Message": "Unknown failure." })
-})
-
-app.use(async (req, res, next) => {
-  const user = await client.query(
-    q.Get(
-      q.Ref(
-        q.Collection('users'),
-        req.session.userID
-      )
-    )
-  )
-    .catch(e => res.send('Unauthorised user.'))
-
-  req.user = user
-  next()
 })
 
 app.delete('/auth/logout', async (req, res) => {
