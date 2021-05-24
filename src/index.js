@@ -63,7 +63,7 @@ app.get("/note/get/:noteID", async (req, res) => {
     )
     .catch(e => console.log(e));
 
-    let note = formatData.formatNote(doc.data);
+    let note = formatData.formatNote(doc);
 
     res.json(note);
 })
