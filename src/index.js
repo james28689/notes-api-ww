@@ -12,6 +12,7 @@ const oauth_client = new OAuth2Client(process.env.CLIENT_ID)
 
 const bodyParser = require('body-parser')
 app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
 
 const q = faunadb.query
 
@@ -19,15 +20,16 @@ const port = process.env.PORT || 8080
 
 const formatData = require('./formatData')
 
-var cookieParser = require("cookie-parser");
 var session = require("express-session");
 
-app.use(cookieParser());
+app.set("trust proxy", true)
 
 app.use(session({
   secret: "random text that I'm typing out shhhhh",
+  resave: true,
   cookie: {
-    secure: false
+    secure: true,
+    maxAge: 60 * 60 * 1000
   }
 }))
 
@@ -57,6 +59,7 @@ app.post('/auth/google', async (req, res) => {
     )
 
     req.session.userID = user.ref.id
+    req.session.save()
     res.status(201)
     res.json(user)
   } else {
@@ -81,29 +84,31 @@ app.post('/auth/google', async (req, res) => {
     res.status(201)
     res.json(user)
   }
-
+  req.session.save()
   console.log(req.session)
+  console.log(req.sessionID)
 })
 
-app.use(async (req, res, next) => {
-  console.log("HOLA")
+// app.use(async (req, res, next) => {
+//   console.log("HOLA")
 
-  const user = await client.query(
-    q.Get(
-      q.Ref(
-        q.Collection('users'),
-        req.session.userID
-      )
-    )
-  )
-    .catch(e => res.send('Unauthorised user.'))
+//   const user = await client.query(
+//     q.Get(
+//       q.Ref(
+//         q.Collection('users'),
+//         req.session.userID
+//       )
+//     )
+//   )
+//     .catch(e => res.send('Unauthorised user.'))
 
-  req.user = user
-  next()
-})
+//   req.user = user
+//   next()
+// })
 
 app.get('/note/user', async (req, res) => {
   console.log(req.session)
+  console.log(req.sessionID)
   const doc = await client.query(
     q.Map(
       q.Paginate(
@@ -208,18 +213,18 @@ app.put('/note/update/:noteID', async (req, res) => {
   res.send(`Note with id ${doc.ref.id} updated.`)
 })
 
-app.delete('/auth/logout', async (req, res) => {
-  await req.session.destroy()
-  res.status(200)
-  res.json({
-    message: 'Logged out successfully.'
-  })
-})
+// app.delete('/auth/logout', async (req, res) => {
+//   await req.session.destroy()
+//   res.status(200)
+//   res.json({
+//     message: 'Logged out successfully.'
+//   })
+// })
 
-app.get('/me', async (req, res) => {
-  res.status(200)
-  res.json(req.user)
-})
+// app.get('/me', async (req, res) => {
+//   res.status(200)
+//   res.json(req.user)
+// })
 
 app.listen(port, () => console.log(`Listening on port ${port}.`))
 
