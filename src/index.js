@@ -103,6 +103,7 @@ app.use(async (req, res, next) => {
 })
 
 app.get('/note/user', async (req, res) => {
+  console.log(req.session)
   const doc = await client.query(
     q.Map(
       q.Paginate(
