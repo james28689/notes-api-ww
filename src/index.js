@@ -131,7 +131,7 @@ app.get('/note/user', async (req, res) => {
       q.Paginate(
         q.Match(
           q.Index('notes_by_user'),
-          q.Ref(q.Collection('users'), req.session.userID)
+          q.Ref(q.Collection('users'), req.body.userID)
         )
       ),
       q.Lambda('note', q.Get(q.Var('note')))
