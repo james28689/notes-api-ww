@@ -19,19 +19,7 @@ const q = faunadb.query
 const port = process.env.PORT || 8080
 
 const formatData = require('./formatData')
-
-var session = require("express-session");
-
-app.set("trust proxy", true)
-
-app.use(session({
-  secret: "random text that I'm typing out shhhhh",
-  resave: true,
-  cookie: {
-    secure: true,
-    maxAge: 60 * 60 * 1000
-  }
-}))
+const randomKeyGen = require("./randomKeyGen")
 
 app.post('/auth/google', async (req, res) => {
   const currentDate = new Date()
@@ -57,11 +45,27 @@ app.post('/auth/google', async (req, res) => {
         )
       )
     )
+    const key = randomKeyGen.genTimeKey();
+  
+    let keyData = {
+      userID: user.ref.id,
+      key: key
+    }
 
-    req.session.userID = user.ref.id
-    req.session.save()
+    console.log(keyData)
+
+    await client.query(
+      q.Create(
+        q.Collection("keys"),
+        {
+          data: { keyData }
+        }
+      )
+    )
+    .catch(e => console.log(e))
+
     res.status(201)
-    res.json(user)
+    res.json({ user: user, key: key })
   } else {
     const data = {
       email: email,
@@ -80,13 +84,28 @@ app.post('/auth/google', async (req, res) => {
     )
     .catch(error => console.log(error));
 
-    req.session.userID = user.ref.id
+    const key = randomKeyGen.genTimeKey();
+  
+    const keyData = {
+      userID: user.ref.id,
+      key: key
+    }
+
+    console.log(keyData);
+
+    const doc = await client.query(
+      q.Create(
+        q.Collection("keys"),
+        {
+          date: { keyData }
+        }
+      )
+    )
+    .catch(e => console.log(e))
+
     res.status(201)
-    res.json(user)
+    res.json({ user: user, key: key })
   }
-  req.session.save()
-  console.log(req.session)
-  console.log(req.sessionID)
 })
 
 // app.use(async (req, res, next) => {
@@ -107,8 +126,6 @@ app.post('/auth/google', async (req, res) => {
 // })
 
 app.get('/note/user', async (req, res) => {
-  console.log(req.session)
-  console.log(req.sessionID)
   const doc = await client.query(
     q.Map(
       q.Paginate(
