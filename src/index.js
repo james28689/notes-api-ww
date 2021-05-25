@@ -52,8 +52,6 @@ app.post('/auth/google', async (req, res) => {
       key: key
     }
 
-    console.log(keyData)
-
     await client.query(
       q.Create(
         q.Collection("keys"),
@@ -126,29 +124,32 @@ app.post('/auth/google', async (req, res) => {
 // })
 
 app.get('/note/user/:key', async (req, res) => {
-  const userID = await client.query(
-    q.Match(
-      q.Index("userid_by_key"), req.params.key
+  const keyDoc = await client.query(
+    q.Get(
+      q.Match(
+        q.Index("keys_by_key"), req.params.key
+      )
     )
   )
   .catch(e => console.log(e));
+
+  console.log(keyDoc.data.keyData.userID)
 
   const doc = await client.query(
     q.Map(
       q.Paginate(
         q.Match(
           q.Index('notes_by_user'),
-          q.Ref(q.Collection('users'), userID)
+          q.Ref(q.Collection('users'), keyDoc.data.keyData.userID)
         )
       ),
       q.Lambda('note', q.Get(q.Var('note')))
     )
   )
     .catch(e => console.log(e))
-
+  
   console.log(doc)
-
-  const notes = formatData.formatNoteArray(doc)
+  const notes = formatData.formatNoteArray(doc.data)
 
   res.json(notes)
 })
@@ -237,13 +238,12 @@ app.put('/note/update/:noteID', async (req, res) => {
   res.send(`Note with id ${doc.ref.id} updated.`)
 })
 
-// app.delete('/auth/logout', async (req, res) => {
-//   await req.session.destroy()
-//   res.status(200)
-//   res.json({
-//     message: 'Logged out successfully.'
-//   })
-// })
+app.delete('/auth/logout', async (req, res) => {
+  res.status(200)
+  res.json({
+    message: 'Logged out successfully.'
+  })
+})
 
 // app.get('/me', async (req, res) => {
 //   res.status(200)
