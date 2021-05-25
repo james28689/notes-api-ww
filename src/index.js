@@ -7,8 +7,8 @@ require('dotenv').config()
 const faunadb = require('faunadb')
 const client = new faunadb.Client({ secret: process.env.SECRET_KEY })
 
-const { OAuth2Client } = require('google-auth-library')
-const oauth_client = new OAuth2Client(process.env.CLIENT_ID)
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const bodyParser = require('body-parser')
 app.use(bodyParser.json())
@@ -21,126 +21,96 @@ const port = process.env.PORT || 8080
 const formatData = require('./formatData')
 const randomKeyGen = require("./randomKeyGen")
 
-app.post('/auth/google', async (req, res) => {
+const cookieSession = require("cookie-session");
+
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.CALLBACK_URL
+}, function (accessToken, refreshToken, profile, cb) {
+
+  console.log(profile)
+
   const currentDate = new Date()
+    const user = {
+      email: profile._json.email,
+      username: profile.displayName,
+      name: profile._json.name,
+      dateJoined: currentDate.toISOString()
+    }
 
-  const { token } = req.body
-  const ticket = await oauth_client.verifyIdToken({
-    idToken: token,
-    audience: process.env.CLIENT_ID
-  })
-
-  const { name, email } = ticket.getPayload()
-
-  const userExists = await client.query(
-    q.Exists(q.Match(q.Index("users_by_email"), email))
-  )
-
-  if (userExists) {
-    const user = await client.query(
-      q.Get(
-        q.Match(
-          q.Index("users_by_email"),
-          email
+  const result = client.query(
+    q.Let(
+      {
+        ref: q.Match(q.Index("users_by_email"), profile._json.email),
+      },
+      q.If(
+        q.Exists(q.Var("ref")),
+        q.Get(q.Var("ref")),
+        q.Create(
+          q.Collection("users"),
+          { data: user }
         )
       )
     )
-    const key = randomKeyGen.genTimeKey();
-  
-    let keyData = {
-      userID: user.ref.id,
-      key: key
-    }
+  )
+  .then(ret =>  {
+    const dbUser = ret
+    console.log(dbUser)
+    return cb(null, dbUser);
+  })
+}
+))
 
-    await client.query(
-      q.Create(
-        q.Collection("keys"),
-        {
-          data: { keyData }
-        }
-      )
-    )
-    .catch(e => console.log(e))
-
-    res.status(201)
-    res.json({ user: user, key: key })
-  } else {
-    const data = {
-      email: email,
-      username: name + (Math.floor(Math.random() * 99)).toString(),
-      name: name,
-      dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
-    }
-
-    const user = await client.query(
-      q.Create(
-        q.Collection("users"),
-        {
-          data
-        }
-      )
-    )
-    .catch(error => console.log(error));
-
-    const key = randomKeyGen.genTimeKey();
-  
-    const keyData = {
-      userID: user.ref.id,
-      key: key
-    }
-
-    console.log(keyData);
-
-    const doc = await client.query(
-      q.Create(
-        q.Collection("keys"),
-        {
-          date: { keyData }
-        }
-      )
-    )
-    .catch(e => console.log(e))
-
-    res.status(201)
-    res.json({ user: user, key: key })
-  }
+passport.serializeUser(function (user, done) {
+  done(null, user);
 })
 
-// app.use(async (req, res, next) => {
-//   console.log("HOLA")
+passport.deserializeUser(function (user, done) {
+  done(null, user);
+})
 
-//   const user = await client.query(
-//     q.Get(
-//       q.Ref(
-//         q.Collection('users'),
-//         req.session.userID
-//       )
-//     )
-//   )
-//     .catch(e => res.send('Unauthorised user.'))
+app.use(cookieSession({
+  name: "session-name",
+  keys: ["key1", "key2"]
+}))
 
-//   req.user = user
-//   next()
-// })
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.get('/note/user/:key', async (req, res) => {
-  const keyDoc = await client.query(
-    q.Get(
-      q.Match(
-        q.Index("keys_by_key"), req.params.key
-      )
-    )
-  )
-  .catch(e => console.log(e));
+const checkUserLoggedIn = (req, res, next) => {
+  req.user ? next() : res.sendStatus(401);
+}
 
-  console.log(keyDoc.data.keyData.userID)
+app.get("/auth/success", checkUserLoggedIn, (req, res) => {
+  res.json({ displayName: req.user })
+})
 
+app.get("/auth/failed", (req, res) => {
+  res.json({ message: "Authentication failure." })
+})
+
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+app.get("/auth/google/cb", passport.authenticate("google", { failureRedirect: "/auth/failed" }),
+  function (req, res) {
+    res.redirect("/auth/success");
+  }
+)
+
+app.get("/auth/logout", (req, res) => {
+  req.session = null;
+  req.logout()
+  res.redirect("https://www.google.com")
+})
+
+app.get('/note/user', checkUserLoggedIn, async (req, res) => {
   const doc = await client.query(
     q.Map(
       q.Paginate(
         q.Match(
           q.Index('notes_by_user'),
-          q.Ref(q.Collection('users'), keyDoc.data.keyData.userID)
+          q.Ref(q.Collection("users"), req.user.ref["@ref"].id)
         )
       ),
       q.Lambda('note', q.Get(q.Var('note')))
@@ -238,18 +208,6 @@ app.put('/note/update/:noteID', async (req, res) => {
   res.send(`Note with id ${doc.ref.id} updated.`)
 })
 
-app.delete('/auth/logout', async (req, res) => {
-  res.status(200)
-  res.json({
-    message: 'Logged out successfully.'
-  })
-})
-
-// app.get('/me', async (req, res) => {
-//   res.status(200)
-//   res.json(req.user)
-// })
-
 app.listen(port, () => console.log(`Listening on port ${port}.`))
 
 // app.get("/note/all", async (req, res) => {
@@ -265,3 +223,105 @@ app.listen(port, () => console.log(`Listening on port ${port}.`))
 
 //     res.json(notes);
 // });
+
+// app.post('/auth/google', async (req, res) => {
+//   const currentDate = new Date()
+
+//   const { token } = req.body
+//   const ticket = await oauth_client.verifyIdToken({
+//     idToken: token,
+//     audience: process.env.GOOGLE_CLIENT_ID
+//   })
+
+//   const { name, email } = ticket.getPayload()
+
+//   const userExists = await client.query(
+//     q.Exists(q.Match(q.Index("users_by_email"), email))
+//   )
+
+//   if (userExists) {
+//     const user = await client.query(
+//       q.Get(
+//         q.Match(
+//           q.Index("users_by_email"),
+//           email
+//         )
+//       )
+//     )
+//     const key = randomKeyGen.genTimeKey();
+  
+//     let keyData = {
+//       userID: user.ref.id,
+//       key: key
+//     }
+
+//     await client.query(
+//       q.Create(
+//         q.Collection("keys"),
+//         {
+//           data: { keyData }
+//         }
+//       )
+//     )
+//     .catch(e => console.log(e))
+
+//     res.status(201)
+//     res.json({ user: user, key: key })
+//   } else {
+//     const data = {
+//       email: email,
+//       username: name + (Math.floor(Math.random() * 99)).toString(),
+//       name: name,
+//       dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+//     }
+
+//     const user = await client.query(
+//       q.Create(
+//         q.Collection("users"),
+//         {
+//           data
+//         }
+//       )
+//     )
+//     .catch(error => console.log(error));
+
+//     const key = randomKeyGen.genTimeKey();
+  
+//     const keyData = {
+//       userID: user.ref.id,
+//       key: key
+//     }
+
+//     console.log(keyData);
+
+//     const doc = await client.query(
+//       q.Create(
+//         q.Collection("keys"),
+//         {
+//           date: { keyData }
+//         }
+//       )
+//     )
+//     .catch(e => console.log(e))
+
+//     res.status(201)
+//     res.json({ user: user, key: key })
+//   }
+// })
+
+// app.use(async (req, res, next) => {
+//   console.log("HOLA")
+
+//   const user = await client.query(
+//     q.Get(
+//       q.Ref(
+//         q.Collection('users'),
+//         req.session.userID
+//       )
+//     )
+//   )
+//     .catch(e => res.send('Unauthorised user.'))
+
+//   req.user = user
+//   next()
+// })
