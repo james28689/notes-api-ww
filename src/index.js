@@ -125,13 +125,13 @@ app.post('/auth/google', async (req, res) => {
 //   next()
 // })
 
-app.get('/note/user', async (req, res) => {
+app.get('/note/user/:userID', async (req, res) => {
   const doc = await client.query(
     q.Map(
       q.Paginate(
         q.Match(
           q.Index('notes_by_user'),
-          q.Ref(q.Collection('users'), req.body.userID)
+          q.Ref(q.Collection('users'), req.params.userID)
         )
       ),
       q.Lambda('note', q.Get(q.Var('note')))
