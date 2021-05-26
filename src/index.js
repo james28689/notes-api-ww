@@ -71,14 +71,11 @@ app.post('/auth/google', async (req, res) => {
   )
 
   res.cookie("userID", user.ref.id)
-  console.log(req.session)
   res.status(201)
   res.json({ user: user })
 })
 
 app.get('/note/user', async (req, res) => {
-  console.log(req.cookies)
-
   const doc = await client.query(
     q.Map(
       q.Paginate(
@@ -92,10 +89,7 @@ app.get('/note/user', async (req, res) => {
   )
     .catch(e => console.log(e))
   
-  console.log(doc)
   const notes = formatData.formatNoteArray(doc.data)
-  console.log(notes)
-
   res.json(notes)
 })
 
@@ -119,7 +113,6 @@ app.get('/note/get/:noteID', async (req, res) => {
 })
 
 app.delete('/note/delete/:noteID', async (req, res) => {
-  console.log(req.params.noteID)
   await client.query(
     q.Delete(
       q.Ref(
