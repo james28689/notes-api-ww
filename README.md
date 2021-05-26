@@ -20,11 +20,8 @@ Created using FaunaDB, node.js, and express
 
 # Endpoints:
 ## /note:
-### /all:
-    - Takes no input.
-    - Returns all stored notes as array of notes.
-### /user/{userID}:
-    - Takes user ID in request parameters.
+### /user:
+    - userID cookie taken.
     - Returns all notes belonging to user as array of notes.
 ### /get/{noteID}:
     - Takes note ID in request parameters.
@@ -39,10 +36,7 @@ Created using FaunaDB, node.js, and express
     - Takes note ID in request parameters and data as JSON in request body.
     - Sends confirmation message.
 ## /user:
-### /authenticate:
-    - Takes username and password as JSON in request body.
-    - Sends authentication status (true/false) and formatted user data.
-### /create:
-    - Takes user data and password hash as JSON in request body.
-    - Sends formatted user data back.
-### ...
+### /auth/google:
+    - Authenticates with google and creates/finds user in Fauna database.
+### /auth/logout:
+    - Currently does absolutely nothing.
