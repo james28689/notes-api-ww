@@ -76,26 +76,6 @@ app.post('/auth/google', async (req, res) => {
   res.json({ user: user })
 })
 
-// app.use(async (req, res, next) => {
-//   console.log("HOLA")
-
-//   console.log(req.cookies)
-
-//   const user = await client.query(
-//     q.Get(
-//       q.Ref(
-//         q.Collection('users'),
-//         req.cookies.userID
-//       )
-//     )
-//   )
-//     .catch(e => res.send('Unauthorised user.'))
-
-//   req.user = user
-//   console.log(req.user)
-//   next()
-// })
-
 app.get('/note/user', async (req, res) => {
   console.log(req.cookies)
 
@@ -210,23 +190,4 @@ app.delete('/auth/logout', async (req, res) => {
   })
 })
 
-// app.get('/me', async (req, res) => {
-//   res.status(200)
-//   res.json(req.user)
-// })
-
 app.listen(port, () => console.log(`Listening on port ${port}.`))
-
-// app.get("/note/all", async (req, res) => {
-//     const doc = await client.query(
-//         q.Map(
-//             q.Paginate(q.Documents(q.Collection("notes"))),
-//             q.Lambda("note", q.Get(q.Var("note")))
-//         )
-//     )
-//     .catch(e => console.log(e));
-
-//     let notes = formatData.formatNoteArray(doc.data);
-
-//     res.json(notes);
-// });
