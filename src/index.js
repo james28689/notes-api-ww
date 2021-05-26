@@ -1,11 +1,11 @@
+require('dotenv').config()
+
 const app = require('express')()
 const cors = require('cors')
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: process.env.ALLOWED_URL,
   credentials: true,
 }))
-
-require('dotenv').config()
 
 const faunadb = require('faunadb')
 const client = new faunadb.Client({ secret: process.env.SECRET_KEY })
@@ -46,47 +46,34 @@ app.post('/auth/google', async (req, res) => {
   })
 
   const { name, email } = ticket.getPayload()
+  
+  const data = {
+    email: email,
+    username: name + (Math.floor(Math.random() * 99)).toString(),
+    name: name,
+    dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
+  }
 
-  const userExists = await client.query(
-    q.Exists(q.Match(q.Index("users_by_email"), email))
-  )
-
-  if (userExists) {
-    const user = await client.query(
-      q.Get(
-        q.Match(
-          q.Index("users_by_email"),
-          email
+  const user = await client.query(
+    q.Let(
+      {
+        ref: q.Match(q.Index("users_by_email"), data.email),
+      },
+      q.If(
+        q.Exists(q.Var("ref")),
+        q.Get(q.Var("ref")),
+        q.Create(
+          q.Collection("users"),
+          { data: data }
         )
       )
     )
+  )
 
-    res.cookie("userID", user.ref.id)
-    console.log(req.session)
-    res.status(201)
-    res.json({ user: user })
-  } else {
-    const data = {
-      email: email,
-      username: name + (Math.floor(Math.random() * 99)).toString(),
-      name: name,
-      dateJoined: q.Date(currentDate.toISOString().substring(0, 10))
-    }
-
-    const user = await client.query(
-      q.Create(
-        q.Collection("users"),
-        {
-          data
-        }
-      )
-    )
-    .catch(error => console.log(error));
-    
-    res.cookie("userID", user.ref.id)
-    res.status(201)
-    res.json({ user: user })
-  }
+  res.cookie("userID", user.ref.id)
+  console.log(req.session)
+  res.status(201)
+  res.json({ user: user })
 })
 
 // app.use(async (req, res, next) => {
@@ -109,7 +96,7 @@ app.post('/auth/google', async (req, res) => {
 //   next()
 // })
 
-app.get('/note/user/:key', async (req, res) => {
+app.get('/note/user', async (req, res) => {
   console.log(req.cookies)
 
   const doc = await client.query(
@@ -127,6 +114,7 @@ app.get('/note/user/:key', async (req, res) => {
   
   console.log(doc)
   const notes = formatData.formatNoteArray(doc.data)
+  console.log(notes)
 
   res.json(notes)
 })
