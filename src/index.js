@@ -140,7 +140,7 @@ app.post('/note/add', async (req, res) => {
   const currentDate = new Date()
 
   const data = {
-    userRef: q.Ref(q.Collection('users'), req.session.userID),
+    userRef: q.Ref(q.Collection('users'), req.cookies.userID),
     title: req.body.title,
     content: req.body.content,
     date: q.Date(currentDate.toISOString().substring(0, 10))
