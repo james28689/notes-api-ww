@@ -12,10 +12,7 @@ Created using FaunaDB, node.js, and express
 ## User:
     - userID
     - email
-    - name {
-        - first
-        - last
-    }
+    - name
     - dateJoined
 
 # Endpoints:
