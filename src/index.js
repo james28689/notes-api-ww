@@ -1,6 +1,9 @@
 const app = require('express')()
 const cors = require('cors')
-app.use(cors())
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}))
 
 require('dotenv').config()
 
@@ -20,6 +23,18 @@ const port = process.env.PORT || 8080
 
 const formatData = require('./formatData')
 const randomKeyGen = require("./randomKeyGen")
+
+var session = require("express-session")
+const cookieParser = require('cookie-parser')
+app.set('trust proxy', 1)
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: true }
+}))
+
+app.use(cookieParser())
 
 app.post('/auth/google', async (req, res) => {
   const currentDate = new Date()
@@ -45,25 +60,11 @@ app.post('/auth/google', async (req, res) => {
         )
       )
     )
-    const key = randomKeyGen.genTimeKey();
-  
-    let keyData = {
-      userID: user.ref.id,
-      key: key
-    }
 
-    await client.query(
-      q.Create(
-        q.Collection("keys"),
-        {
-          data: { keyData }
-        }
-      )
-    )
-    .catch(e => console.log(e))
-
+    res.cookie("userID", user.ref.id)
+    console.log(req.session)
     res.status(201)
-    res.json({ user: user, key: key })
+    res.json({ user: user })
   } else {
     const data = {
       email: email,
@@ -81,66 +82,42 @@ app.post('/auth/google', async (req, res) => {
       )
     )
     .catch(error => console.log(error));
-
-    const key = randomKeyGen.genTimeKey();
-  
-    const keyData = {
-      userID: user.ref.id,
-      key: key
-    }
-
-    console.log(keyData);
-
-    const doc = await client.query(
-      q.Create(
-        q.Collection("keys"),
-        {
-          date: { keyData }
-        }
-      )
-    )
-    .catch(e => console.log(e))
-
+    
+    res.cookie("userID", user.ref.id)
     res.status(201)
-    res.json({ user: user, key: key })
+    res.json({ user: user })
   }
 })
 
 // app.use(async (req, res, next) => {
 //   console.log("HOLA")
 
+//   console.log(req.cookies)
+
 //   const user = await client.query(
 //     q.Get(
 //       q.Ref(
 //         q.Collection('users'),
-//         req.session.userID
+//         req.cookies.userID
 //       )
 //     )
 //   )
 //     .catch(e => res.send('Unauthorised user.'))
 
 //   req.user = user
+//   console.log(req.user)
 //   next()
 // })
 
 app.get('/note/user/:key', async (req, res) => {
-  const keyDoc = await client.query(
-    q.Get(
-      q.Match(
-        q.Index("keys_by_key"), req.params.key
-      )
-    )
-  )
-  .catch(e => console.log(e));
-
-  console.log(keyDoc.data.keyData.userID)
+  console.log(req.cookies)
 
   const doc = await client.query(
     q.Map(
       q.Paginate(
         q.Match(
           q.Index('notes_by_user'),
-          q.Ref(q.Collection('users'), keyDoc.data.keyData.userID)
+          q.Ref(q.Collection('users'), req.cookies.userID)
         )
       ),
       q.Lambda('note', q.Get(q.Var('note')))
