@@ -88,6 +88,8 @@ app.get('/note/user', async (req, res) => {
     )
   )
     .catch(e => console.log(e))
+
+  console.log(doc)
   
   const notes = formatData.formatNoteArray(doc.data)
   res.json(notes)
