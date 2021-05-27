@@ -2,8 +2,8 @@
 
 Created using FaunaDB, node.js, and express
 
-## Return Types:
-### Note:
+# Return Types:
+## Note:
     - noteID
     - userID
     - title
