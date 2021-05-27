@@ -76,6 +76,8 @@ app.post('/auth/google', async (req, res) => {
 })
 
 app.get('/note/user', async (req, res) => {
+  console.log(req.cookies)
+
   const doc = await client.query(
     q.Map(
       q.Paginate(
