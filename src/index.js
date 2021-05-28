@@ -27,6 +27,7 @@ const randomKeyGen = require("./randomKeyGen")
 var session = require("express-session")
 const cookieParser = require('cookie-parser')
 app.set('trust proxy', 1)
+app.enable("trust proxy")
 app.use(session({
   secret: 'keyboard cat',
   resave: false,
