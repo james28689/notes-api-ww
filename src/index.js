@@ -1,11 +1,18 @@
 require('dotenv').config()
 
 const app = require('express')()
-const cors = require('cors')
-app.use(cors({
-  origin: process.env.ALLOWED_URL,
-  credentials: true,
-}))
+// const cors = require('cors')
+// app.use(cors({
+//   origin: process.env.ALLOWED_URL,
+//   credentials: true,
+// }))
+
+app.use(function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', process.env.ALLOWED_URL);
+  res.header('Access-Control-Allow-Credentials', true);
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
 
 const faunadb = require('faunadb')
 const client = new faunadb.Client({ secret: process.env.SECRET_KEY })
