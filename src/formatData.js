@@ -15,7 +15,7 @@ module.exports.formatNote = (data) => {
     parentId: parseInt(data.data.folderRef.id),
     title: data.data.title,
     content: data.data.content,
-    type: "note",
+    type: "file",
     date: Date(data.data.date['@date'])
   }
 }
