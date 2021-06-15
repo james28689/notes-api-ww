@@ -118,7 +118,7 @@ app.get('/note/user', async (req, res) => {
 
   const folders = formatData.formatFolderArray(doc2.data)
 
-  const notesFolders = notes + folders
+  const notesFolders = notes.append(folders)
 
   res.json(notesFolders)
 })
