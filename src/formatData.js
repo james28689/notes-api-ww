@@ -30,10 +30,17 @@ module.exports.formatFolderArray = (data) => {
 }
 
 module.exports.formatFolder = (data) => {
+  var parentID;
+  if (data.data.parentID === 0) {
+    parentID = null
+  } else {
+    parentID = data.data.parentID
+  }
+
   return {
     folderID: data.ref.id,
     userID: data.data.userRef.id,
-    parentID: data.data.parentID,
+    parentID: parentID,
     name: data.data.name
   }
 }
