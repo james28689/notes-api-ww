@@ -10,7 +10,7 @@ module.exports.formatNoteArray = (data) => {
 
 module.exports.formatNote = (data) => {
   return {
-    noteID: data.ref.id,
+    ID: data.ref.id,
     userID: data.data.userRef.id,
     parentID: data.data.folderRef.id,
     title: data.data.title,
@@ -38,7 +38,7 @@ module.exports.formatFolder = (data) => {
   }
 
   return {
-    folderID: data.ref.id,
+    ID: data.ref.id,
     userID: data.data.userRef.id,
     parentID: parentID,
     name: data.data.name
