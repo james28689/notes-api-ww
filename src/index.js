@@ -102,7 +102,7 @@ app.get('/note/user', async (req, res) => {
   
   const notes = formatData.formatNoteArray(doc.data)
 
-  const doc = await client.query(
+  const doc2 = await client.query(
     q.Map(
       q.Paginate(
         q.Match(
@@ -114,9 +114,9 @@ app.get('/note/user', async (req, res) => {
     )
   )
 
-  console.log(doc)
+  console.log(doc2)
 
-  const folders = formatData.formatFolderArray(doc.data)
+  const folders = formatData.formatFolderArray(doc2.data)
 
   const notesFolders = notes + folders
 
