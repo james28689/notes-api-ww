@@ -29,7 +29,6 @@ const q = faunadb.query
 const port = process.env.PORT || 8080
 
 const formatData = require('./formatData')
-const randomKeyGen = require("./randomKeyGen")
 
 var session = require("express-session")
 const cookieParser = require('cookie-parser')
@@ -102,7 +101,26 @@ app.get('/note/user', async (req, res) => {
   console.log(doc)
   
   const notes = formatData.formatNoteArray(doc.data)
-  res.json(notes)
+
+  const doc = await client.query(
+    q.Map(
+      q.Paginate(
+        q.Match(
+          q.Index("folders_by_user"),
+          q.Ref(q.Collection("users"), req.cookies.userID)
+        )
+      ),
+      q.Lambda("folder", q.Get(q.Var("folder")))
+    )
+  )
+
+  console.log(doc)
+
+  const folders = formatData.formatFolderArray(doc.data)
+
+  const notesFolders = notes + folders
+
+  res.json(notesFolders)
 })
 
 app.get('/note/get/:noteID', async (req, res) => {

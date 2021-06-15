@@ -1,7 +1,7 @@
 module.exports.formatNoteArray = (data) => {
-  const notes = []
+  var notes = []
 
-  for (const i in data) {
+  for (var i in data) {
     notes.push(this.formatNote(data[i]))
   }
 
@@ -12,9 +12,29 @@ module.exports.formatNote = (data) => {
   return {
     noteID: data.ref.id,
     userID: data.data.userRef.id,
+    parentID: data.data.folderRef.id,
     title: data.data.title,
     content: data.data.content,
     date: Date(data.data.date['@date'])
+  }
+}
+
+module.exports.formatFolderArray = (data) => {
+  var folders = []
+
+  for (var i in data) {
+    folders.push(this.formatFolder(data[i]))
+  }
+
+  return folders
+}
+
+module.exports.formatFolder = (data) => {
+  return {
+    folderID: data.ref.id,
+    userID: data.data.userRef.id,
+    parentID: data.data.parentID,
+    name: data.data.name
   }
 }
 
@@ -23,10 +43,7 @@ module.exports.formatUser = (data) => {
     userID: data.ref.id,
     email: data.data.email,
     username: data.data.username,
-    name: {
-      first: data.data.name.first,
-      last: data.data.name.last
-    },
+    name: data.data.name,
     dataJoined: Date(data.data.dateJoined['@date'])
   }
 }
