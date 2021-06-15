@@ -15,6 +15,7 @@ module.exports.formatNote = (data) => {
     parentID: data.data.folderRef.id,
     title: data.data.title,
     content: data.data.content,
+    type: "note",
     date: Date(data.data.date['@date'])
   }
 }
@@ -51,6 +52,7 @@ module.exports.formatUser = (data) => {
     email: data.data.email,
     username: data.data.username,
     name: data.data.name,
+    type: "folder",
     dataJoined: Date(data.data.dateJoined['@date'])
   }
 }
