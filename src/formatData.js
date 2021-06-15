@@ -42,6 +42,7 @@ module.exports.formatFolder = (data) => {
     id: parseInt(data.ref.id),
     userID: data.data.userRef.id,
     parentId: parentID,
+    type: "folder",
     name: data.data.name
   }
 }
@@ -52,7 +53,6 @@ module.exports.formatUser = (data) => {
     email: data.data.email,
     username: data.data.username,
     name: data.data.name,
-    type: "folder",
     dataJoined: Date(data.data.dateJoined['@date'])
   }
 }
