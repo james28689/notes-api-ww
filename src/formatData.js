@@ -10,11 +10,12 @@ module.exports.formatNoteArray = (data) => {
 
 module.exports.formatNote = (data) => {
   return {
-    noteID: data.ref.id,
+    id: parseInt(data.ref.id),
     userID: data.data.userRef.id,
-    parentID: data.data.folderRef.id,
+    parentId: parseInt(data.data.folderRef.id),
     title: data.data.title,
     content: data.data.content,
+    type: "file",
     date: Date(data.data.date['@date'])
   }
 }
@@ -34,13 +35,14 @@ module.exports.formatFolder = (data) => {
   if (data.data.parentID === 0) {
     parentID = null
   } else {
-    parentID = data.data.parentID
+    parentID = parseInt(data.data.parentID)
   }
 
   return {
-    folderID: data.ref.id,
+    id: parseInt(data.ref.id),
     userID: data.data.userRef.id,
-    parentID: parentID,
+    parentId: parentID,
+    type: "folder",
     name: data.data.name
   }
 }
