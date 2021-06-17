@@ -51,6 +51,6 @@ module.exports.formatUser = (data) => {
     email: data.data.email,
     username: data.data.username,
     name: data.data.name,
-    dataJoined: Date(data.data.dateJoined['@date'])
+    dateJoined: Date(data.data.dateJoined['@date'])
   }
 }
