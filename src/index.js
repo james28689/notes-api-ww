@@ -207,7 +207,8 @@ app.put('/note/update/:noteID', async (req, res) => {
   )
     .catch(e => console.log(e))
 
-  res.send(`Note with id ${doc.ref.id} updated.`)
+  // res.send(`Note with id ${doc.ref.id} updated.`)
+  res.send(doc)
 })
 
 app.delete('/auth/logout', async (req, res) => {
