@@ -32,7 +32,8 @@ const port = process.env.PORT || 8080
 const formatData = require('./formatData')
 
 var session = require("express-session")
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const { Collection } = require('faunadb');
 app.set('trust proxy', 1)
 app.enable("trust proxy")
 app.use(session({
@@ -187,6 +188,8 @@ app.post('/note/add', async (req, res) => {
 app.put('/note/update/:noteID', async (req, res) => {
   const currentDate = new Date()
 
+  console.log(body)
+
   const data = {
     userID: req.body.userID,
     parentId: req.body.parentId,
@@ -202,7 +205,14 @@ app.put('/note/update/:noteID', async (req, res) => {
         q.Collection('notes'),
         req.params.noteID
       ),
-      { data }
+      {
+        userRef: q.Ref(q.Collection("users"), data.userID),
+        folderRef: q.Ref(q.Collection("folders"), data.parentId),
+        title: data.title,
+        content: data.content,
+        date: data.date,
+        type: data.type
+      }
     )
   )
     .catch(e => console.log(e))
