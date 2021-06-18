@@ -188,7 +188,7 @@ app.post('/note/add', async (req, res) => {
 app.put('/note/update/:noteID', async (req, res) => {
   const currentDate = new Date()
 
-  console.log(body)
+  console.log(req.body)
 
   const data = {
     userID: req.body.userID,
