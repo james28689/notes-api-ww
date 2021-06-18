@@ -187,6 +187,9 @@ app.put('/note/update/:noteID', async (req, res) => {
   const currentDate = new Date()
 
   const data = {
+    userID: req.body.userID,
+    parentId: req.body.parentId,
+    type: "file",
     title: req.body.title,
     content: req.body.content,
     date: q.Date(currentDate.toISOString().substring(0, 10))
