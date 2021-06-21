@@ -1,11 +1,6 @@
 require('dotenv').config()
 
 const app = require('express')()
-// const cors = require('cors')
-// app.use(cors({
-//   origin: process.env.ALLOWED_URL,
-//   credentials: true,
-// }))
 
 app.use(function(req, res, next) {
   res.header('Access-Control-Allow-Origin', process.env.ALLOWED_URL);
@@ -165,8 +160,10 @@ app.post('/note/add', async (req, res) => {
 
   const data = {
     userRef: q.Ref(q.Collection('users'), req.cookies.userID),
+    folderRef: q.Ref(q.Collection('folders'), req.body.parentId),
     title: req.body.title,
     content: req.body.content,
+    type: "file",
     date: q.Date(currentDate.toISOString().substring(0, 10))
   }
 
@@ -220,6 +217,48 @@ app.put('/note/update/:noteID', async (req, res) => {
 
   // res.send(`Note with id ${doc.ref.id} updated.`)
   res.send(doc)
+})
+
+app.post("/folder/add", async (req, res) => {
+  const doc = await q.Create(
+    q.Collection("folders"),
+    {
+      data: {
+        userRef: q.Ref(q.Collection("users"), req.cookies.userID),
+        name: req.body.name,
+        parentId: req.body.parentId
+      }
+    }
+  )
+  .catch(e => console.log(e))
+
+  res.send(`Folder created with ID of ${doc.ref.id}`)
+})
+
+app.put("/folder/update/:folderID", async (req, res) => {
+  const doc = await client.query(
+    q.Update(
+      q.Ref(q.Collection("folders"), req.params.folderID),
+      {
+        data: {
+          userRef: q.Ref(q.Collection("users"), req.cookies.userID),
+          name: req.body.name,
+          parentId: req.body.parentId
+        }
+      }
+    )
+  )
+})
+
+app.delete("folder/delete/:folderID", async (req, res) => {
+  const doc = await client.query(
+    q.Delete(
+      q.Ref(q.Collection("folders"), req.params.folderID)
+    )
+  )
+  .catch(e => console.log(e))
+
+  res.send(`Folder deleted with ID of ${doc.ref.id}`)
 })
 
 app.delete('/auth/logout', async (req, res) => {
